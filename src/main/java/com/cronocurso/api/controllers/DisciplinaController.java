@@ -4,6 +4,7 @@ import com.cronocurso.api.dtos.DisciplinaRecordDto;
 import com.cronocurso.api.models.DisciplinaModel;
 import com.cronocurso.api.repositories.DisciplinaRepository;
 import jakarta.validation.Valid;
+import jakarta.websocket.server.PathParam;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,43 +21,59 @@ public class DisciplinaController {
     @Autowired
     private DisciplinaRepository disciplinaRepository;
 
-    @GetMapping("/disciplinas")
+    @GetMapping(value = "/disciplinas",
+            produces = "application/json")
     public ResponseEntity<List<DisciplinaModel>> index() {
         return ResponseEntity.status(HttpStatus.OK).body(disciplinaRepository.findAll());
     }
 
-    @PostMapping("/disciplinas")
-    public ResponseEntity<DisciplinaModel> create(
-            @RequestBody @Valid DisciplinaRecordDto bodyDisciplina) {
+    @PostMapping(value = "/disciplinas",
+            consumes = "application/json",
+            produces = "application/json")
+    public ResponseEntity<DisciplinaModel> store(
+            @RequestBody @Valid DisciplinaRecordDto body) {
 
         var model = new DisciplinaModel();
-        BeanUtils.copyProperties(bodyDisciplina, model);
+        BeanUtils.copyProperties(body, model);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(disciplinaRepository.save(model));
     }
 
-    @GetMapping("disciplinas/{id}")
-    public ResponseEntity<Object> show(@RequestParam(value = "id") UUID id) {
+    @GetMapping(value = "/disciplinas/{id}",
+            produces = "application/json")
+    public ResponseEntity<Object> show(@PathVariable UUID id) {
         Optional<DisciplinaModel> model = disciplinaRepository.findById(id);
         if (model.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Disciplina inexistente!");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Nada encontrado!");
         }
 
-        return ResponseEntity.ok().body(model.get());
+        return ResponseEntity.status(HttpStatus.OK).body(model.get());
     }
 
-    @PutMapping("disciplinas/{id}")
+    @PutMapping(value = "/disciplinas/{id}",
+            consumes = "application/json",
+            produces = "application/json")
     public ResponseEntity<Object> update(
-            @RequestParam(value = "id") UUID id,
-            @RequestBody @Valid DisciplinaRecordDto bodyDisciplina) {
+            @PathVariable UUID id,
+            @RequestBody @Valid DisciplinaRecordDto body) {
 
         Optional<DisciplinaModel> model = disciplinaRepository.findById(id);
         if (model.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Disciplina inexistente!");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Nada encontrado!");
         }
         var disciplinaModel = model.get();
-        BeanUtils.copyProperties(bodyDisciplina, disciplinaModel);
+        BeanUtils.copyProperties(body, disciplinaModel);
 
         return ResponseEntity.status(HttpStatus.OK).body(disciplinaRepository.save(disciplinaModel));
+    }
+
+    @DeleteMapping("/disciplinas/{id}")
+    public ResponseEntity<Object> delete(@PathVariable UUID id) {
+        Optional<DisciplinaModel> model = disciplinaRepository.findById(id);
+        if (model.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Nada encontrado!");
+        }
+        disciplinaRepository.delete(model.get());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body("Registro excluido");
     }
 }
