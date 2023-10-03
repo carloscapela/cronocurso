@@ -51,7 +51,6 @@ public class MateriaController {
     }
 
     @PutMapping(value = "materias/{id}",
-            consumes = "application/json",
             produces = "application/json")
     public ResponseEntity<Object> update(
             @PathVariable UUID id,

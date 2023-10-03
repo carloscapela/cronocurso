@@ -1,6 +1,8 @@
 package com.cronocurso.api.controllers;
 
+import com.cronocurso.api.dtos.DisciplinaRecordDto;
 import com.cronocurso.api.dtos.MateriaRecordDto;
+import com.cronocurso.api.models.DisciplinaModel;
 import com.cronocurso.api.models.MateriaModel;
 import com.cronocurso.api.repositories.MateriaRepository;
 import org.junit.jupiter.api.Test;
@@ -10,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -18,6 +21,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 public class MateriaControllerTest {
 
     String uri = "materias";
+
+    String uuid = "b2a683f1-4638-40e8-83e2-50b98bd82b51";
 
     @Autowired
     WebTestClient webTestClient;
@@ -49,6 +54,7 @@ public class MateriaControllerTest {
 
     @Test
     void indexWithAllRegister() {
+        Long total = repository.count();
         webTestClient
                 .get()
                 .uri(uri)
@@ -56,7 +62,7 @@ public class MateriaControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$").hasJsonPath()
-                .jsonPath("$.length()").isEqualTo(2)
+                .jsonPath("$.length()").isEqualTo(total)
                 .jsonPath("$[1].nome").isEqualTo("SkuTest");
     }
 
@@ -74,7 +80,7 @@ public class MateriaControllerTest {
 
         webTestClient
                 .get()
-                .uri(uri + "/b2a683f1-4638-40e8-83e2-50b98bd82b51")
+                .uri(uri + "/" + uuid)
                 .exchange()
                 .expectStatus().isNotFound();
 
@@ -108,5 +114,44 @@ public class MateriaControllerTest {
                 .uri(uri + "/" + result.getId())
                 .exchange()
                 .expectStatus().isNoContent();
+    }
+
+    @Test
+    void updateWithSuccessAndFail() {
+        MateriaModel model = new MateriaModel();
+        model.setNome("Sku3");
+
+        Optional<MateriaModel> entity = Optional.of(repository.save(model));
+
+        assertThat(entity.isPresent()).isEqualTo(true);
+        assertThat(entity.isEmpty()).isEqualTo(false);
+
+        MateriaModel result = entity.get();
+
+        MateriaRecordDto body = new MateriaRecordDto("Sku4");
+
+        webTestClient
+                .put()
+                .uri(uri + "/" + result.getId())
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$").hasJsonPath()
+                .jsonPath("$.nome").isEqualTo("Sku4");
+
+        webTestClient
+                .put()
+                .uri(uri + "/" + uuid)
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isNotFound();
+
+        webTestClient
+                .put()
+                .uri(uri + "/123")
+                .exchange()
+                .expectStatus().isBadRequest();
+
     }
 }
