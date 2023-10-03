@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -18,7 +19,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 public class DisciplinaControllerTest {
 
     String uri = "disciplinas";
-
+    String uuid = "b2a683f1-4638-40e8-83e2-50b98bd82b51";
     @Autowired
     WebTestClient webTestClient;
 
@@ -27,7 +28,7 @@ public class DisciplinaControllerTest {
 
     @Test
     void storeSuccessAndBadRequest() {
-        DisciplinaRecordDto body = new DisciplinaRecordDto("DisciplinaTest");
+        DisciplinaRecordDto body = new DisciplinaRecordDto("Sku");
         webTestClient
             .post()
                 .uri(uri)
@@ -36,19 +37,20 @@ public class DisciplinaControllerTest {
                 .expectStatus().isCreated()
                 .expectBody()
                 .jsonPath("$").hasJsonPath()
-                .jsonPath("$.nome").isEqualTo("DisciplinaTest");
+                .jsonPath("$.nome").isEqualTo("Sku");
 
-        DisciplinaRecordDto bodyBad = new DisciplinaRecordDto("");
         webTestClient
                 .post()
                 .uri(uri)
-                .bodyValue(bodyBad)
+                .bodyValue(new DisciplinaRecordDto(""))
                 .exchange()
                 .expectStatus().isBadRequest();
     }
 
     @Test
     void indexWithAllRegister() {
+        Long total = repository.count();
+
         webTestClient
                 .get()
                 .uri(uri)
@@ -56,14 +58,14 @@ public class DisciplinaControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$").hasJsonPath()
-                .jsonPath("$.length()").isEqualTo(2)
-                .jsonPath("$[1].nome").isEqualTo("DisciplinaTest");
+                .jsonPath("$.length()").isEqualTo(total)
+                .jsonPath("$[1].nome").isEqualTo("Sku");
     }
 
     @Test
     void showGetFirstSuccessAndFail() {
         DisciplinaModel model = new DisciplinaModel();
-        model.setNome("DisciplinaTest2");
+        model.setNome("Sku2");
 
         Optional<DisciplinaModel> entity = Optional.of(repository.save(model));
 
@@ -74,7 +76,7 @@ public class DisciplinaControllerTest {
 
         webTestClient
                 .get()
-                .uri(uri + "/b2a683f1-4638-40e8-83e2-50b98bd82b51")
+                .uri(uri + "/" + uuid)
                 .exchange()
                 .expectStatus().isNotFound();
 
@@ -94,7 +96,7 @@ public class DisciplinaControllerTest {
     @Test
     void deleteWithSuccess() {
         DisciplinaModel model = new DisciplinaModel();
-        model.setNome("DisciplinaTest3");
+        model.setNome("Sku3");
 
         Optional<DisciplinaModel> entity = Optional.of(repository.save(model));
 
@@ -108,5 +110,44 @@ public class DisciplinaControllerTest {
                 .uri(uri + "/" + result.getId())
                 .exchange()
                 .expectStatus().isNoContent();
+    }
+
+    @Test
+    void updateWithSuccessAndFail() {
+        DisciplinaModel model = new DisciplinaModel();
+        model.setNome("Sku3");
+
+        Optional<DisciplinaModel> entity = Optional.of(repository.save(model));
+
+        assertThat(entity.isPresent()).isEqualTo(true);
+        assertThat(entity.isEmpty()).isEqualTo(false);
+
+        DisciplinaModel result = entity.get();
+
+        DisciplinaRecordDto body = new DisciplinaRecordDto("Sku4");
+
+        webTestClient
+                .put()
+                .uri(uri + "/" + result.getId())
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$").hasJsonPath()
+                .jsonPath("$.nome").isEqualTo("Sku4");
+
+        webTestClient
+                .put()
+                .uri(uri + "/" + uuid)
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isNotFound();
+
+        webTestClient
+                .put()
+                .uri(uri + "/123")
+                .exchange()
+                .expectStatus().isBadRequest();
+
     }
 }

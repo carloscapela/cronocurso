@@ -51,7 +51,6 @@ public class DisciplinaController {
     }
 
     @PutMapping(value = "/disciplinas/{id}",
-            consumes = "application/json",
             produces = "application/json")
     public ResponseEntity<Object> update(
             @PathVariable UUID id,
